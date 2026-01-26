@@ -1,11 +1,12 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { Customer, Booking, Expense } from '@/types';
+import { Customer, Booking, Expense, Visa } from '@/types';
 
 interface AppState {
   customers: Customer[];
   bookings: Booking[];
   expenses: Expense[];
+  visas: Visa[];
   
   // Customer actions
   addCustomer: (customer: Customer) => void;
@@ -22,6 +23,11 @@ interface AppState {
   addExpense: (expense: Expense) => void;
   updateExpense: (id: string, expense: Partial<Expense>) => void;
   deleteExpense: (id: string) => void;
+
+  // Visa actions
+  addVisa: (visa: Visa) => void;
+  updateVisa: (id: string, visa: Partial<Visa>) => void;
+  deleteVisa: (id: string) => void;
 }
 
 export const useStore = create<AppState>()(
@@ -30,6 +36,7 @@ export const useStore = create<AppState>()(
       customers: [],
       bookings: [],
       expenses: [],
+      visas: [],
       
       addCustomer: (customer) =>
         set((state) => ({ customers: [...state.customers, customer] })),
@@ -45,6 +52,7 @@ export const useStore = create<AppState>()(
         set((state) => ({
           customers: state.customers.filter((c) => c.id !== id),
           bookings: state.bookings.filter((b) => b.customerId !== id),
+          visas: state.visas.filter((v) => v.customerId !== id),
         })),
       
       addBooking: (booking) =>
@@ -82,6 +90,21 @@ export const useStore = create<AppState>()(
       deleteExpense: (id) =>
         set((state) => ({
           expenses: state.expenses.filter((e) => e.id !== id),
+        })),
+
+      addVisa: (visa) =>
+        set((state) => ({ visas: [...state.visas, visa] })),
+      
+      updateVisa: (id, updatedVisa) =>
+        set((state) => ({
+          visas: state.visas.map((v) =>
+            v.id === id ? { ...v, ...updatedVisa } : v
+          ),
+        })),
+      
+      deleteVisa: (id) =>
+        set((state) => ({
+          visas: state.visas.filter((v) => v.id !== id),
         })),
     }),
     {

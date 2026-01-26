@@ -8,6 +8,7 @@ import Customers from "./pages/Customers";
 import Bookings from "./pages/Bookings";
 import Reports from "./pages/Reports";
 import Expenses from "./pages/Expenses";
+import Visas from "./pages/Visas";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -22,6 +23,7 @@ const App = () => (
           <Route path="/" element={<Dashboard />} />
           <Route path="/customers" element={<Customers />} />
           <Route path="/bookings" element={<Bookings />} />
+          <Route path="/visas" element={<Visas />} />
           <Route path="/reports" element={<Reports />} />
           <Route path="/expenses" element={<Expenses />} />
           <Route path="*" element={<NotFound />} />

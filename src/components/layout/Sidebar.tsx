@@ -6,7 +6,8 @@ import {
   FileText, 
   Receipt,
   Menu,
-  X
+  X,
+  Stamp
 } from 'lucide-react';
 import { useState } from 'react';
 import logo from '@/assets/logo.png';
@@ -16,6 +17,7 @@ const navItems = [
   { path: '/', label: 'لوحة التحكم', icon: LayoutDashboard },
   { path: '/customers', label: 'العملاء', icon: Users },
   { path: '/bookings', label: 'الحجوزات', icon: CreditCard },
+  { path: '/visas', label: 'التأشيرات', icon: Stamp },
   { path: '/reports', label: 'التقارير', icon: FileText },
   { path: '/expenses', label: 'المصروفات', icon: Receipt },
 ];

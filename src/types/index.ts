@@ -28,6 +28,11 @@ export interface Visa {
   issueDate: string;
   expiryDate: string;
   status: 'pending' | 'issued' | 'expired';
+  travelDirection: 'egypt-to-saudi' | 'saudi-to-egypt';
+  fromLocation: string;
+  toLocation: string;
+  departureDate: string;
+  bookingDate: string;
 }
 
 export interface Expense {
