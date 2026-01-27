@@ -1,13 +1,29 @@
 import { useState } from 'react';
-import { Download, Calendar } from 'lucide-react';
+import { Download, Calendar, Plus, Edit, Trash2, Check } from 'lucide-react';
 import { useStore } from '@/store/useStore';
 import { Layout } from '@/components/layout/Layout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { DebtFormDialog } from '@/components/debts/DebtFormDialog';
+import { Debt } from '@/types';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 
 const Reports = () => {
-  const { bookings, expenses, customers } = useStore();
+  const { bookings, expenses, customers, debts, deleteDebt, toggleDebtPaid } = useStore();
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
+  const [isDebtDialogOpen, setIsDebtDialogOpen] = useState(false);
+  const [editingDebt, setEditingDebt] = useState<Debt | null>(null);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [debtToDelete, setDebtToDelete] = useState<string | null>(null);
 
   // Filter by selected date
   const dailyBookings = bookings.filter(
@@ -33,6 +49,35 @@ const Reports = () => {
     .filter((b) => !b.isPaid)
     .reduce((acc, b) => acc + b.remainingAmount, 0);
 
+  // Debt calculations
+  const receivables = debts.filter((d) => d.type === 'receivable' && !d.isPaid);
+  const payables = debts.filter((d) => d.type === 'payable' && !d.isPaid);
+  const totalReceivables = receivables.reduce((acc, d) => acc + d.amount, 0);
+  const totalPayables = payables.reduce((acc, d) => acc + d.amount, 0);
+
+  const handleEditDebt = (debt: Debt) => {
+    setEditingDebt(debt);
+    setIsDebtDialogOpen(true);
+  };
+
+  const handleDeleteDebt = (id: string) => {
+    setDebtToDelete(id);
+    setDeleteDialogOpen(true);
+  };
+
+  const confirmDeleteDebt = () => {
+    if (debtToDelete) {
+      deleteDebt(debtToDelete);
+      setDeleteDialogOpen(false);
+      setDebtToDelete(null);
+    }
+  };
+
+  const handleDebtDialogClose = () => {
+    setIsDebtDialogOpen(false);
+    setEditingDebt(null);
+  };
+
   const handleExportReport = () => {
     const reportData = {
       date: selectedDate,
@@ -47,6 +92,12 @@ const Reports = () => {
         paid: b.isPaid,
       })),
       expenses: dailyExpenses,
+      debts: {
+        receivables: receivables.map(d => ({ person: d.personName, amount: d.amount })),
+        payables: payables.map(d => ({ person: d.personName, amount: d.amount })),
+        totalReceivables,
+        totalPayables,
+      }
     };
 
     const blob = new Blob([JSON.stringify(reportData, null, 2)], {
@@ -131,6 +182,129 @@ const Reports = () => {
           </div>
         </div>
 
+        {/* Debts Section */}
+        <div className="bg-card rounded-xl border border-border shadow-card animate-fade-in">
+          <div className="p-6 border-b border-border flex items-center justify-between">
+            <h2 className="text-lg font-semibold">المدين والدائن</h2>
+            <Button onClick={() => setIsDebtDialogOpen(true)} size="sm" className="bg-gradient-primary">
+              <Plus className="h-4 w-4 ml-2" />
+              إضافة دين
+            </Button>
+          </div>
+          <div className="p-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+              <div className="p-4 bg-success/10 rounded-lg border border-success/20">
+                <p className="text-sm text-muted-foreground mb-1">إجمالي المدين (فلوس ليا)</p>
+                <p className="text-2xl font-bold text-success">
+                  {totalReceivables.toLocaleString('ar-EG')} ج.م
+                </p>
+              </div>
+              <div className="p-4 bg-accent/10 rounded-lg border border-accent/20">
+                <p className="text-sm text-muted-foreground mb-1">إجمالي الدائن (فلوس عليا)</p>
+                <p className="text-2xl font-bold text-accent">
+                  {totalPayables.toLocaleString('ar-EG')} ج.م
+                </p>
+              </div>
+            </div>
+
+            {/* Receivables List */}
+            {receivables.length > 0 && (
+              <div className="mb-6">
+                <h3 className="font-medium mb-3 text-success">المدين (فلوس ليا)</h3>
+                <div className="space-y-2">
+                  {receivables.map((debt) => (
+                    <div
+                      key={debt.id}
+                      className="flex items-center justify-between p-3 bg-muted/50 rounded-lg"
+                    >
+                      <div>
+                        <p className="font-medium">{debt.personName}</p>
+                        {debt.description && (
+                          <p className="text-sm text-muted-foreground">{debt.description}</p>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <p className="font-semibold text-success">
+                          {debt.amount.toLocaleString('ar-EG')} ج.م
+                        </p>
+                        <button
+                          onClick={() => toggleDebtPaid(debt.id)}
+                          className="p-2 rounded-lg hover:bg-success/20 transition-colors"
+                          title="تم السداد"
+                        >
+                          <Check className="h-4 w-4 text-success" />
+                        </button>
+                        <button
+                          onClick={() => handleEditDebt(debt)}
+                          className="p-2 rounded-lg hover:bg-muted transition-colors"
+                        >
+                          <Edit className="h-4 w-4 text-muted-foreground" />
+                        </button>
+                        <button
+                          onClick={() => handleDeleteDebt(debt.id)}
+                          className="p-2 rounded-lg hover:bg-destructive/10 transition-colors"
+                        >
+                          <Trash2 className="h-4 w-4 text-destructive" />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Payables List */}
+            {payables.length > 0 && (
+              <div>
+                <h3 className="font-medium mb-3 text-accent">الدائن (فلوس عليا)</h3>
+                <div className="space-y-2">
+                  {payables.map((debt) => (
+                    <div
+                      key={debt.id}
+                      className="flex items-center justify-between p-3 bg-muted/50 rounded-lg"
+                    >
+                      <div>
+                        <p className="font-medium">{debt.personName}</p>
+                        {debt.description && (
+                          <p className="text-sm text-muted-foreground">{debt.description}</p>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <p className="font-semibold text-accent">
+                          {debt.amount.toLocaleString('ar-EG')} ج.م
+                        </p>
+                        <button
+                          onClick={() => toggleDebtPaid(debt.id)}
+                          className="p-2 rounded-lg hover:bg-success/20 transition-colors"
+                          title="تم السداد"
+                        >
+                          <Check className="h-4 w-4 text-success" />
+                        </button>
+                        <button
+                          onClick={() => handleEditDebt(debt)}
+                          className="p-2 rounded-lg hover:bg-muted transition-colors"
+                        >
+                          <Edit className="h-4 w-4 text-muted-foreground" />
+                        </button>
+                        <button
+                          onClick={() => handleDeleteDebt(debt.id)}
+                          className="p-2 rounded-lg hover:bg-destructive/10 transition-colors"
+                        >
+                          <Trash2 className="h-4 w-4 text-destructive" />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {receivables.length === 0 && payables.length === 0 && (
+              <p className="text-muted-foreground text-center py-4">لا توجد ديون مسجلة</p>
+            )}
+          </div>
+        </div>
+
         {/* Daily Transactions */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Daily Bookings */}
@@ -195,6 +369,29 @@ const Reports = () => {
           </div>
         </div>
       </div>
+
+      <DebtFormDialog
+        open={isDebtDialogOpen}
+        onOpenChange={handleDebtDialogClose}
+        debt={editingDebt}
+      />
+
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>هل أنت متأكد؟</AlertDialogTitle>
+            <AlertDialogDescription>
+              سيتم حذف هذا الدين نهائياً. لا يمكن التراجع عن هذا الإجراء.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="flex-row-reverse gap-2">
+            <AlertDialogCancel>إلغاء</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDeleteDebt} className="bg-destructive hover:bg-destructive/90">
+              حذف
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Layout>
   );
 };

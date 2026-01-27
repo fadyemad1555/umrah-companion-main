@@ -19,6 +19,20 @@ export interface Booking {
   remainingAmount: number;
   isPaid: boolean;
   createdAt: string;
+  travelDirection: 'egypt-to-saudi' | 'saudi-to-egypt';
+  fromLocation: string;
+  toLocation: string;
+  departureDate: string;
+}
+
+export interface Debt {
+  id: string;
+  personName: string;
+  amount: number;
+  type: 'receivable' | 'payable'; // receivable = مدين (لي)، payable = دائن (عليا)
+  description: string;
+  date: string;
+  isPaid: boolean;
 }
 
 export interface Visa {

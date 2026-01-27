@@ -2,6 +2,9 @@ import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
+import { format } from 'date-fns';
+import { ar } from 'date-fns/locale';
+import { CalendarIcon } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -23,16 +26,28 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
+import { Calendar } from '@/components/ui/calendar';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { useStore } from '@/store/useStore';
 import { Booking } from '@/types';
+import { cn } from '@/lib/utils';
+
 
 const bookingSchema = z.object({
   customerId: z.string().min(1, 'يجب اختيار العميل'),
   programName: z.string().min(2, 'اسم البرنامج مطلوب'),
   totalAmount: z.number().min(1, 'المبلغ الإجمالي مطلوب'),
   visaDeposit: z.number().min(0, 'عربون التأشيرة مطلوب'),
+  travelDirection: z.enum(['egypt-to-saudi', 'saudi-to-egypt']),
+  fromLocation: z.string().min(1, 'مكان المغادرة مطلوب'),
+  toLocation: z.string().min(1, 'مكان الوصول مطلوب'),
+  departureDate: z.date({ required_error: 'تاريخ الذهاب مطلوب' }),
 });
 
 type BookingFormData = z.infer<typeof bookingSchema>;
@@ -57,8 +72,13 @@ export const BookingFormDialog = ({
       programName: '',
       totalAmount: 0,
       visaDeposit: 0,
+      travelDirection: 'egypt-to-saudi',
+      fromLocation: '',
+      toLocation: '',
     },
   });
+
+  const travelDirection = form.watch('travelDirection');
 
   useEffect(() => {
     if (booking) {
@@ -67,6 +87,10 @@ export const BookingFormDialog = ({
         programName: booking.programName,
         totalAmount: booking.totalAmount,
         visaDeposit: booking.visaDeposit,
+        travelDirection: booking.travelDirection,
+        fromLocation: booking.fromLocation,
+        toLocation: booking.toLocation,
+        departureDate: new Date(booking.departureDate),
       });
     } else {
       form.reset({
@@ -74,9 +98,20 @@ export const BookingFormDialog = ({
         programName: '',
         totalAmount: 0,
         visaDeposit: 0,
+        travelDirection: 'egypt-to-saudi',
+        fromLocation: '',
+        toLocation: '',
       });
     }
   }, [booking, form]);
+
+  // Reset locations when direction changes
+  useEffect(() => {
+    if (!booking) {
+      form.setValue('fromLocation', '');
+      form.setValue('toLocation', '');
+    }
+  }, [travelDirection, form, booking]);
 
   const onSubmit = (data: BookingFormData) => {
     const remainingAmount = data.totalAmount - data.visaDeposit;
@@ -85,6 +120,7 @@ export const BookingFormDialog = ({
       updateBooking(booking.id, {
         ...data,
         remainingAmount,
+        departureDate: data.departureDate.toISOString(),
       });
     } else {
       const newBooking: Booking = {
@@ -96,6 +132,10 @@ export const BookingFormDialog = ({
         remainingAmount,
         isPaid: false,
         createdAt: new Date().toISOString(),
+        travelDirection: data.travelDirection,
+        fromLocation: data.fromLocation,
+        toLocation: data.toLocation,
+        departureDate: data.departureDate.toISOString(),
       };
       addBooking(newBooking);
     }
@@ -103,9 +143,10 @@ export const BookingFormDialog = ({
     form.reset();
   };
 
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg">
+      <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>
             {booking ? 'تعديل الحجز' : 'إضافة حجز جديد'}
@@ -148,6 +189,98 @@ export const BookingFormDialog = ({
                   <FormControl>
                     <Input placeholder="مثال: عمرة رمضان 2024" {...field} />
                   </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="travelDirection"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>اتجاه السفر</FormLabel>
+                  <Select onValueChange={field.onChange} value={field.value}>
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      <SelectItem value="egypt-to-saudi">من مصر إلى السعودية</SelectItem>
+                      <SelectItem value="saudi-to-egypt">من السعودية إلى مصر</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <div className="grid grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="fromLocation"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>من</FormLabel>
+                    <FormControl>
+                      <Input placeholder="مثال: القاهرة" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="toLocation"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>إلى</FormLabel>
+                    <FormControl>
+                      <Input placeholder="مثال: مكة المكرمة" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+
+            <FormField
+              control={form.control}
+              name="departureDate"
+              render={({ field }) => (
+                <FormItem className="flex flex-col">
+                  <FormLabel>تاريخ الذهاب</FormLabel>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <FormControl>
+                        <Button
+                          variant="outline"
+                          className={cn(
+                            "w-full pr-3 text-right font-normal",
+                            !field.value && "text-muted-foreground"
+                          )}
+                        >
+                          {field.value ? (
+                            format(field.value, "PPP", { locale: ar })
+                          ) : (
+                            <span>اختر التاريخ</span>
+                          )}
+                          <CalendarIcon className="mr-auto h-4 w-4 opacity-50" />
+                        </Button>
+                      </FormControl>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar
+                        mode="single"
+                        selected={field.value}
+                        onSelect={field.onChange}
+                        initialFocus
+                        className="pointer-events-auto"
+                      />
+                    </PopoverContent>
+                  </Popover>
                   <FormMessage />
                 </FormItem>
               )}

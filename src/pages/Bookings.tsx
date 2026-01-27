@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import { Plus, Search, Edit, Trash2 } from 'lucide-react';
+import { format } from 'date-fns';
+import { ar } from 'date-fns/locale';
 import { useStore } from '@/store/useStore';
 import { Layout } from '@/components/layout/Layout';
 import { Button } from '@/components/ui/button';
@@ -90,6 +92,8 @@ const Bookings = () => {
                 <tr>
                   <th className="px-6 py-4 text-right text-sm font-semibold text-foreground">العميل</th>
                   <th className="px-6 py-4 text-right text-sm font-semibold text-foreground">البرنامج</th>
+                  <th className="px-6 py-4 text-right text-sm font-semibold text-foreground">من - إلى</th>
+                  <th className="px-6 py-4 text-right text-sm font-semibold text-foreground">تاريخ الذهاب</th>
                   <th className="px-6 py-4 text-right text-sm font-semibold text-foreground">المبلغ الإجمالي</th>
                   <th className="px-6 py-4 text-right text-sm font-semibold text-foreground">عربون التأشيرة</th>
                   <th className="px-6 py-4 text-right text-sm font-semibold text-foreground">المتبقي</th>
@@ -100,7 +104,7 @@ const Bookings = () => {
               <tbody className="divide-y divide-border">
                 {filteredBookings.length === 0 ? (
                   <tr>
-                    <td colSpan={7} className="px-6 py-12 text-center text-muted-foreground">
+                    <td colSpan={9} className="px-6 py-12 text-center text-muted-foreground">
                       لا توجد حجوزات
                     </td>
                   </tr>
@@ -113,6 +117,20 @@ const Bookings = () => {
                           <span className="font-medium">{customer?.fullName || 'عميل غير معروف'}</span>
                         </td>
                         <td className="px-6 py-4">{booking.programName}</td>
+                        <td className="px-6 py-4 text-sm">
+                          {booking.fromLocation && booking.toLocation ? (
+                            <span>{booking.fromLocation} → {booking.toLocation}</span>
+                          ) : (
+                            <span className="text-muted-foreground">-</span>
+                          )}
+                        </td>
+                        <td className="px-6 py-4 text-sm">
+                          {booking.departureDate ? (
+                            format(new Date(booking.departureDate), "dd/MM/yyyy", { locale: ar })
+                          ) : (
+                            <span className="text-muted-foreground">-</span>
+                          )}
+                        </td>
                         <td className="px-6 py-4 font-semibold">
                           {booking.totalAmount.toLocaleString('ar-EG')} ج.م
                         </td>
@@ -153,7 +171,8 @@ const Bookings = () => {
                       </tr>
                     );
                   })
-                )}
+                )
+              }
               </tbody>
             </table>
           </div>
