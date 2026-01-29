@@ -1,11 +1,10 @@
 import { useState } from 'react';
 import { Plus, Search, Edit, Trash2, Phone, MapPin } from 'lucide-react';
-import { useStore } from '@/store/useStore';
+import { useCustomers, Customer } from '@/hooks/useCustomers';
 import { Layout } from '@/components/layout/Layout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { CustomerFormDialog } from '@/components/customers/CustomerFormDialog';
-import { Customer } from '@/types';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -18,7 +17,7 @@ import {
 } from '@/components/ui/alert-dialog';
 
 const Customers = () => {
-  const { customers, deleteCustomer } = useStore();
+  const { customers, deleteCustomer, isLoading } = useCustomers();
   const [searchQuery, setSearchQuery] = useState('');
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null);
@@ -27,9 +26,9 @@ const Customers = () => {
 
   const filteredCustomers = customers.filter(
     (customer) =>
-      customer.fullName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      customer.phoneNumber.includes(searchQuery) ||
-      customer.nationalId.includes(searchQuery)
+      customer.full_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      customer.phone_number.includes(searchQuery) ||
+      customer.national_id.includes(searchQuery)
   );
 
   const handleEdit = (customer: Customer) => {
@@ -61,6 +60,16 @@ const Customers = () => {
     approved: { label: 'تمت الموافقة', className: 'bg-success/10 text-success' },
     rejected: { label: 'مرفوض', className: 'bg-destructive/10 text-destructive' },
   };
+
+  if (isLoading) {
+    return (
+      <Layout>
+        <div className="flex items-center justify-center h-64">
+          <div className="w-12 h-12 border-4 border-primary/30 border-t-primary rounded-full animate-spin" />
+        </div>
+      </Layout>
+    );
+  }
 
   return (
     <Layout>
@@ -102,13 +111,13 @@ const Customers = () => {
               >
                 <div className="flex items-start justify-between mb-4">
                   <div>
-                    <h3 className="text-lg font-semibold">{customer.fullName}</h3>
+                    <h3 className="text-lg font-semibold">{customer.full_name}</h3>
                     <span
                       className={`inline-block px-3 py-1 rounded-full text-xs font-medium mt-2 ${
-                        visaStatusLabels[customer.visaStatus]?.className
+                        visaStatusLabels[customer.visa_status]?.className
                       }`}
                     >
-                      {visaStatusLabels[customer.visaStatus]?.label}
+                      {visaStatusLabels[customer.visa_status]?.label}
                     </span>
                   </div>
                   <div className="flex gap-2">
@@ -130,7 +139,7 @@ const Customers = () => {
                 <div className="space-y-3 text-sm">
                   <div className="flex items-center gap-2 text-muted-foreground">
                     <Phone className="h-4 w-4" />
-                    <span dir="ltr">{customer.phoneNumber}</span>
+                    <span dir="ltr">{customer.phone_number}</span>
                   </div>
                   <div className="flex items-center gap-2 text-muted-foreground">
                     <MapPin className="h-4 w-4" />
@@ -141,11 +150,11 @@ const Customers = () => {
                 <div className="mt-4 pt-4 border-t border-border">
                   <p className="text-sm">
                     <span className="text-muted-foreground">البرنامج: </span>
-                    <span className="font-medium">{customer.umrahProgram || 'غير محدد'}</span>
+                    <span className="font-medium">{customer.umrah_program || 'غير محدد'}</span>
                   </p>
                   <p className="text-sm mt-1">
                     <span className="text-muted-foreground">الهوية: </span>
-                    <span className="font-medium" dir="ltr">{customer.nationalId}</span>
+                    <span className="font-medium" dir="ltr">{customer.national_id}</span>
                   </p>
                 </div>
 

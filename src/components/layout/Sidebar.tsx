@@ -1,4 +1,4 @@
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { 
   LayoutDashboard, 
   Users, 
@@ -7,11 +7,13 @@ import {
   Receipt,
   Menu,
   X,
-  Stamp
+  Stamp,
+  LogOut
 } from 'lucide-react';
 import { useState } from 'react';
 import logo from '@/assets/logo.png';
 import { cn } from '@/lib/utils';
+import { useAuth } from '@/hooks/useAuth';
 
 const navItems = [
   { path: '/', label: 'لوحة التحكم', icon: LayoutDashboard },
@@ -24,7 +26,14 @@ const navItems = [
 
 export const Sidebar = () => {
   const location = useLocation();
+  const navigate = useNavigate();
   const [isOpen, setIsOpen] = useState(false);
+  const { signOut } = useAuth();
+
+  const handleLogout = async () => {
+    await signOut();
+    navigate('/auth');
+  };
 
   return (
     <>
@@ -81,6 +90,17 @@ export const Sidebar = () => {
               );
             })}
           </nav>
+
+          {/* Logout Button */}
+          <div className="p-4 border-t border-sidebar-border">
+            <button
+              onClick={handleLogout}
+              className="flex items-center gap-3 px-4 py-3 w-full rounded-lg text-sidebar-foreground/80 hover:bg-destructive/10 hover:text-destructive transition-all duration-200"
+            >
+              <LogOut className="h-5 w-5" />
+              <span className="font-medium">تسجيل الخروج</span>
+            </button>
+          </div>
 
           {/* Footer */}
           <div className="p-4 border-t border-sidebar-border">

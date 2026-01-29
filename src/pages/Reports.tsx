@@ -1,11 +1,13 @@
 import { useState } from 'react';
 import { Download, Calendar, Plus, Edit, Trash2, Check } from 'lucide-react';
-import { useStore } from '@/store/useStore';
+import { useBookings } from '@/hooks/useBookings';
+import { useExpenses } from '@/hooks/useExpenses';
+import { useCustomers } from '@/hooks/useCustomers';
+import { useDebts, Debt } from '@/hooks/useDebts';
 import { Layout } from '@/components/layout/Layout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { DebtFormDialog } from '@/components/debts/DebtFormDialog';
-import { Debt } from '@/types';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -18,42 +20,48 @@ import {
 } from '@/components/ui/alert-dialog';
 
 const Reports = () => {
-  const { bookings, expenses, customers, debts, deleteDebt, toggleDebtPaid } = useStore();
+  const { bookings, isLoading: loadingBookings } = useBookings();
+  const { expenses, isLoading: loadingExpenses } = useExpenses();
+  const { customers, isLoading: loadingCustomers } = useCustomers();
+  const { debts, deleteDebt, toggleDebtPaid, isLoading: loadingDebts } = useDebts();
+  
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
   const [isDebtDialogOpen, setIsDebtDialogOpen] = useState(false);
   const [editingDebt, setEditingDebt] = useState<Debt | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [debtToDelete, setDebtToDelete] = useState<string | null>(null);
 
+  const isLoading = loadingBookings || loadingExpenses || loadingCustomers || loadingDebts;
+
   // Filter by selected date
   const dailyBookings = bookings.filter(
-    (b) => b.createdAt.split('T')[0] === selectedDate
+    (b) => b.created_at.split('T')[0] === selectedDate
   );
   const dailyExpenses = expenses.filter((e) => e.date === selectedDate);
 
   // Calculate totals
   const dailyIncome = dailyBookings.reduce(
-    (acc, b) => acc + b.visaDeposit + (b.isPaid ? b.totalAmount - b.visaDeposit : 0),
+    (acc, b) => acc + Number(b.visa_deposit) + (b.is_paid ? Number(b.total_amount) - Number(b.visa_deposit) : 0),
     0
   );
-  const dailyExpenseTotal = dailyExpenses.reduce((acc, e) => acc + e.amount, 0);
+  const dailyExpenseTotal = dailyExpenses.reduce((acc, e) => acc + Number(e.amount), 0);
   const dailyProfit = dailyIncome - dailyExpenseTotal;
 
   // Overall stats
   const totalIncome = bookings.reduce(
-    (acc, b) => acc + b.visaDeposit + (b.isPaid ? b.totalAmount - b.visaDeposit : 0),
+    (acc, b) => acc + Number(b.visa_deposit) + (b.is_paid ? Number(b.total_amount) - Number(b.visa_deposit) : 0),
     0
   );
-  const totalExpenses = expenses.reduce((acc, e) => acc + e.amount, 0);
+  const totalExpensesAmount = expenses.reduce((acc, e) => acc + Number(e.amount), 0);
   const remainingPayments = bookings
-    .filter((b) => !b.isPaid)
-    .reduce((acc, b) => acc + b.remainingAmount, 0);
+    .filter((b) => !b.is_paid)
+    .reduce((acc, b) => acc + Number(b.remaining_amount), 0);
 
   // Debt calculations
-  const receivables = debts.filter((d) => d.type === 'receivable' && !d.isPaid);
-  const payables = debts.filter((d) => d.type === 'payable' && !d.isPaid);
-  const totalReceivables = receivables.reduce((acc, d) => acc + d.amount, 0);
-  const totalPayables = payables.reduce((acc, d) => acc + d.amount, 0);
+  const receivables = debts.filter((d) => d.type === 'receivable' && !d.is_paid);
+  const payables = debts.filter((d) => d.type === 'payable' && !d.is_paid);
+  const totalReceivables = receivables.reduce((acc, d) => acc + Number(d.amount), 0);
+  const totalPayables = payables.reduce((acc, d) => acc + Number(d.amount), 0);
 
   const handleEditDebt = (debt: Debt) => {
     setEditingDebt(debt);
@@ -85,16 +93,16 @@ const Reports = () => {
       dailyExpenses: dailyExpenseTotal,
       dailyProfit,
       bookings: dailyBookings.map((b) => ({
-        customer: customers.find((c) => c.id === b.customerId)?.fullName,
-        program: b.programName,
-        amount: b.totalAmount,
-        deposit: b.visaDeposit,
-        paid: b.isPaid,
+        customer: customers.find((c) => c.id === b.customer_id)?.full_name,
+        program: b.program_name,
+        amount: b.total_amount,
+        deposit: b.visa_deposit,
+        paid: b.is_paid,
       })),
       expenses: dailyExpenses,
       debts: {
-        receivables: receivables.map(d => ({ person: d.personName, amount: d.amount })),
-        payables: payables.map(d => ({ person: d.personName, amount: d.amount })),
+        receivables: receivables.map(d => ({ person: d.person_name, amount: d.amount })),
+        payables: payables.map(d => ({ person: d.person_name, amount: d.amount })),
         totalReceivables,
         totalPayables,
       }
@@ -110,6 +118,16 @@ const Reports = () => {
     a.click();
     URL.revokeObjectURL(url);
   };
+
+  if (isLoading) {
+    return (
+      <Layout>
+        <div className="flex items-center justify-center h-64">
+          <div className="w-12 h-12 border-4 border-primary/30 border-t-primary rounded-full animate-spin" />
+        </div>
+      </Layout>
+    );
+  }
 
   return (
     <Layout>
@@ -173,7 +191,7 @@ const Reports = () => {
             </div>
             <div>
               <p className="text-sm opacity-90">إجمالي المصروفات</p>
-              <p className="text-2xl font-bold">{totalExpenses.toLocaleString('ar-EG')} ج.م</p>
+              <p className="text-2xl font-bold">{totalExpensesAmount.toLocaleString('ar-EG')} ج.م</p>
             </div>
             <div>
               <p className="text-sm opacity-90">المبالغ المتبقية</p>
@@ -218,14 +236,14 @@ const Reports = () => {
                       className="flex items-center justify-between p-3 bg-muted/50 rounded-lg"
                     >
                       <div>
-                        <p className="font-medium">{debt.personName}</p>
+                        <p className="font-medium">{debt.person_name}</p>
                         {debt.description && (
                           <p className="text-sm text-muted-foreground">{debt.description}</p>
                         )}
                       </div>
                       <div className="flex items-center gap-2">
                         <p className="font-semibold text-success">
-                          {debt.amount.toLocaleString('ar-EG')} ج.م
+                          {Number(debt.amount).toLocaleString('ar-EG')} ج.م
                         </p>
                         <button
                           onClick={() => toggleDebtPaid(debt.id)}
@@ -264,14 +282,14 @@ const Reports = () => {
                       className="flex items-center justify-between p-3 bg-muted/50 rounded-lg"
                     >
                       <div>
-                        <p className="font-medium">{debt.personName}</p>
+                        <p className="font-medium">{debt.person_name}</p>
                         {debt.description && (
                           <p className="text-sm text-muted-foreground">{debt.description}</p>
                         )}
                       </div>
                       <div className="flex items-center gap-2">
                         <p className="font-semibold text-accent">
-                          {debt.amount.toLocaleString('ar-EG')} ج.م
+                          {Number(debt.amount).toLocaleString('ar-EG')} ج.م
                         </p>
                         <button
                           onClick={() => toggleDebtPaid(debt.id)}
@@ -318,18 +336,18 @@ const Reports = () => {
               ) : (
                 <div className="space-y-3">
                   {dailyBookings.map((booking) => {
-                    const customer = customers.find((c) => c.id === booking.customerId);
+                    const customer = customers.find((c) => c.id === booking.customer_id);
                     return (
                       <div
                         key={booking.id}
                         className="flex items-center justify-between p-3 bg-muted/50 rounded-lg"
                       >
                         <div>
-                          <p className="font-medium">{customer?.fullName}</p>
-                          <p className="text-sm text-muted-foreground">{booking.programName}</p>
+                          <p className="font-medium">{customer?.full_name}</p>
+                          <p className="text-sm text-muted-foreground">{booking.program_name}</p>
                         </div>
                         <p className="font-semibold">
-                          {booking.visaDeposit.toLocaleString('ar-EG')} ج.م
+                          {Number(booking.visa_deposit).toLocaleString('ar-EG')} ج.م
                         </p>
                       </div>
                     );
@@ -359,7 +377,7 @@ const Reports = () => {
                         <p className="text-sm text-muted-foreground">{expense.category}</p>
                       </div>
                       <p className="font-semibold text-accent">
-                        {expense.amount.toLocaleString('ar-EG')} ج.م
+                        {Number(expense.amount).toLocaleString('ar-EG')} ج.م
                       </p>
                     </div>
                   ))}

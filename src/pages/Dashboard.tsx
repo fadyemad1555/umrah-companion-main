@@ -1,20 +1,36 @@
 import { Users, CreditCard, CheckCircle, XCircle, TrendingUp, TrendingDown } from 'lucide-react';
-import { useStore } from '@/store/useStore';
+import { useCustomers } from '@/hooks/useCustomers';
+import { useBookings } from '@/hooks/useBookings';
+import { useExpenses } from '@/hooks/useExpenses';
 import { StatCard } from '@/components/dashboard/StatCard';
 import { Layout } from '@/components/layout/Layout';
 
 const Dashboard = () => {
-  const { customers, bookings, expenses } = useStore();
+  const { customers, isLoading: loadingCustomers } = useCustomers();
+  const { bookings, isLoading: loadingBookings } = useBookings();
+  const { expenses, isLoading: loadingExpenses } = useExpenses();
+
+  const isLoading = loadingCustomers || loadingBookings || loadingExpenses;
 
   const totalCustomers = customers.length;
   const totalBookings = bookings.length;
-  const paidBookings = bookings.filter((b) => b.isPaid).length;
-  const unpaidBookings = bookings.filter((b) => !b.isPaid).length;
-  const totalIncome = bookings.reduce((acc, b) => acc + b.visaDeposit + (b.isPaid ? b.totalAmount - b.visaDeposit : 0), 0);
-  const totalExpenses = expenses.reduce((acc, e) => acc + e.amount, 0);
-  const netProfit = totalIncome - totalExpenses;
+  const paidBookings = bookings.filter((b) => b.is_paid).length;
+  const unpaidBookings = bookings.filter((b) => !b.is_paid).length;
+  const totalIncome = bookings.reduce((acc, b) => acc + Number(b.visa_deposit) + (b.is_paid ? Number(b.total_amount) - Number(b.visa_deposit) : 0), 0);
+  const totalExpensesAmount = expenses.reduce((acc, e) => acc + Number(e.amount), 0);
+  const netProfit = totalIncome - totalExpensesAmount;
 
-  const recentBookings = bookings.slice(-5).reverse();
+  const recentBookings = bookings.slice(0, 5);
+
+  if (isLoading) {
+    return (
+      <Layout>
+        <div className="flex items-center justify-center h-64">
+          <div className="w-12 h-12 border-4 border-primary/30 border-t-primary rounded-full animate-spin" />
+        </div>
+      </Layout>
+    );
+  }
 
   return (
     <Layout>
@@ -63,7 +79,7 @@ const Dashboard = () => {
           />
           <StatCard
             title="إجمالي المصروفات"
-            value={`${totalExpenses.toLocaleString('ar-EG')} ج.م`}
+            value={`${totalExpensesAmount.toLocaleString('ar-EG')} ج.م`}
             icon={TrendingDown}
             variant="default"
           />
@@ -88,26 +104,26 @@ const Dashboard = () => {
             ) : (
               <div className="space-y-4">
                 {recentBookings.map((booking) => {
-                  const customer = customers.find((c) => c.id === booking.customerId);
+                  const customer = customers.find((c) => c.id === booking.customer_id);
                   return (
                     <div
                       key={booking.id}
                       className="flex items-center justify-between p-4 bg-muted/50 rounded-lg"
                     >
                       <div>
-                        <p className="font-medium">{customer?.fullName || 'عميل غير معروف'}</p>
-                        <p className="text-sm text-muted-foreground">{booking.programName}</p>
+                        <p className="font-medium">{customer?.full_name || 'عميل غير معروف'}</p>
+                        <p className="text-sm text-muted-foreground">{booking.program_name}</p>
                       </div>
                       <div className="text-left">
-                        <p className="font-semibold">{booking.totalAmount.toLocaleString('ar-EG')} ج.م</p>
+                        <p className="font-semibold">{Number(booking.total_amount).toLocaleString('ar-EG')} ج.م</p>
                         <span
                           className={`inline-block px-3 py-1 rounded-full text-xs font-medium ${
-                            booking.isPaid
+                            booking.is_paid
                               ? 'bg-success/10 text-success'
                               : 'bg-accent/10 text-accent'
                           }`}
                         >
-                          {booking.isPaid ? 'تم الدفع' : 'لم يتم الدفع'}
+                          {booking.is_paid ? 'تم الدفع' : 'لم يتم الدفع'}
                         </span>
                       </div>
                     </div>

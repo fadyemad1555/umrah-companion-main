@@ -14,16 +14,296 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      bookings: {
+        Row: {
+          created_at: string | null
+          customer_id: string
+          departure_date: string | null
+          from_location: string | null
+          id: string
+          is_paid: boolean | null
+          program_name: string
+          remaining_amount: number | null
+          to_location: string | null
+          total_amount: number | null
+          travel_direction:
+            | Database["public"]["Enums"]["travel_direction"]
+            | null
+          updated_at: string | null
+          user_id: string
+          visa_deposit: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          customer_id: string
+          departure_date?: string | null
+          from_location?: string | null
+          id?: string
+          is_paid?: boolean | null
+          program_name: string
+          remaining_amount?: number | null
+          to_location?: string | null
+          total_amount?: number | null
+          travel_direction?:
+            | Database["public"]["Enums"]["travel_direction"]
+            | null
+          updated_at?: string | null
+          user_id: string
+          visa_deposit?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          customer_id?: string
+          departure_date?: string | null
+          from_location?: string | null
+          id?: string
+          is_paid?: boolean | null
+          program_name?: string
+          remaining_amount?: number | null
+          to_location?: string | null
+          total_amount?: number | null
+          travel_direction?:
+            | Database["public"]["Enums"]["travel_direction"]
+            | null
+          updated_at?: string | null
+          user_id?: string
+          visa_deposit?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bookings_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      customers: {
+        Row: {
+          address: string | null
+          created_at: string | null
+          full_name: string
+          id: string
+          national_id: string
+          notes: string | null
+          phone_number: string
+          umrah_program: string | null
+          updated_at: string | null
+          user_id: string
+          visa_status: Database["public"]["Enums"]["visa_status"] | null
+        }
+        Insert: {
+          address?: string | null
+          created_at?: string | null
+          full_name: string
+          id?: string
+          national_id: string
+          notes?: string | null
+          phone_number: string
+          umrah_program?: string | null
+          updated_at?: string | null
+          user_id: string
+          visa_status?: Database["public"]["Enums"]["visa_status"] | null
+        }
+        Update: {
+          address?: string | null
+          created_at?: string | null
+          full_name?: string
+          id?: string
+          national_id?: string
+          notes?: string | null
+          phone_number?: string
+          umrah_program?: string | null
+          updated_at?: string | null
+          user_id?: string
+          visa_status?: Database["public"]["Enums"]["visa_status"] | null
+        }
+        Relationships: []
+      }
+      debts: {
+        Row: {
+          amount: number | null
+          created_at: string | null
+          date: string | null
+          description: string | null
+          id: string
+          is_paid: boolean | null
+          person_name: string
+          type: Database["public"]["Enums"]["debt_type"]
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          amount?: number | null
+          created_at?: string | null
+          date?: string | null
+          description?: string | null
+          id?: string
+          is_paid?: boolean | null
+          person_name: string
+          type: Database["public"]["Enums"]["debt_type"]
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          amount?: number | null
+          created_at?: string | null
+          date?: string | null
+          description?: string | null
+          id?: string
+          is_paid?: boolean | null
+          person_name?: string
+          type?: Database["public"]["Enums"]["debt_type"]
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      expenses: {
+        Row: {
+          amount: number | null
+          category: string
+          created_at: string | null
+          date: string | null
+          description: string | null
+          id: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          amount?: number | null
+          category: string
+          created_at?: string | null
+          date?: string | null
+          description?: string | null
+          id?: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          amount?: number | null
+          category?: string
+          created_at?: string | null
+          date?: string | null
+          description?: string | null
+          id?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_roles: {
+        Row: {
+          created_at: string | null
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
+      visas: {
+        Row: {
+          booking_date: string | null
+          created_at: string | null
+          customer_id: string
+          departure_date: string | null
+          expiry_date: string | null
+          from_location: string | null
+          id: string
+          issue_date: string | null
+          status: Database["public"]["Enums"]["visa_status"] | null
+          to_location: string | null
+          travel_direction:
+            | Database["public"]["Enums"]["travel_direction"]
+            | null
+          updated_at: string | null
+          user_id: string
+          visa_number: string | null
+        }
+        Insert: {
+          booking_date?: string | null
+          created_at?: string | null
+          customer_id: string
+          departure_date?: string | null
+          expiry_date?: string | null
+          from_location?: string | null
+          id?: string
+          issue_date?: string | null
+          status?: Database["public"]["Enums"]["visa_status"] | null
+          to_location?: string | null
+          travel_direction?:
+            | Database["public"]["Enums"]["travel_direction"]
+            | null
+          updated_at?: string | null
+          user_id: string
+          visa_number?: string | null
+        }
+        Update: {
+          booking_date?: string | null
+          created_at?: string | null
+          customer_id?: string
+          departure_date?: string | null
+          expiry_date?: string | null
+          from_location?: string | null
+          id?: string
+          issue_date?: string | null
+          status?: Database["public"]["Enums"]["visa_status"] | null
+          to_location?: string | null
+          travel_direction?:
+            | Database["public"]["Enums"]["travel_direction"]
+            | null
+          updated_at?: string | null
+          user_id?: string
+          visa_number?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "visas_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
+      is_admin: { Args: never; Returns: boolean }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "admin" | "user"
+      debt_type: "receivable" | "payable"
+      travel_direction: "egypt-to-saudi" | "saudi-to-egypt"
+      visa_status:
+        | "pending"
+        | "processing"
+        | "approved"
+        | "rejected"
+        | "issued"
+        | "expired"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +430,18 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["admin", "user"],
+      debt_type: ["receivable", "payable"],
+      travel_direction: ["egypt-to-saudi", "saudi-to-egypt"],
+      visa_status: [
+        "pending",
+        "processing",
+        "approved",
+        "rejected",
+        "issued",
+        "expired",
+      ],
+    },
   },
 } as const

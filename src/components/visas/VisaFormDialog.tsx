@@ -34,8 +34,8 @@ import {
 import { Calendar } from '@/components/ui/calendar';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { useStore } from '@/store/useStore';
-import { Visa } from '@/types';
+import { useVisas, Visa } from '@/hooks/useVisas';
+import { useCustomers } from '@/hooks/useCustomers';
 import { cn } from '@/lib/utils';
 
 const egyptianGovernorates = [
@@ -75,7 +75,8 @@ export const VisaFormDialog = ({
   onOpenChange,
   visa,
 }: VisaFormDialogProps) => {
-  const { customers, addVisa, updateVisa } = useStore();
+  const { customers } = useCustomers();
+  const { addVisa, updateVisa } = useVisas();
 
   const form = useForm<VisaFormData>({
     resolver: zodResolver(visaSchema),
@@ -94,15 +95,15 @@ export const VisaFormDialog = ({
   useEffect(() => {
     if (visa) {
       form.reset({
-        customerId: visa.customerId,
-        visaNumber: visa.visaNumber,
-        issueDate: new Date(visa.issueDate),
-        expiryDate: new Date(visa.expiryDate),
-        departureDate: new Date(visa.departureDate),
-        status: visa.status,
-        travelDirection: visa.travelDirection,
-        fromLocation: visa.fromLocation,
-        toLocation: visa.toLocation,
+        customerId: visa.customer_id,
+        visaNumber: visa.visa_number,
+        issueDate: visa.issue_date ? new Date(visa.issue_date) : undefined,
+        expiryDate: visa.expiry_date ? new Date(visa.expiry_date) : undefined,
+        departureDate: visa.departure_date ? new Date(visa.departure_date) : undefined,
+        status: visa.status as 'pending' | 'issued' | 'expired',
+        travelDirection: visa.travel_direction,
+        fromLocation: visa.from_location,
+        toLocation: visa.to_location,
       });
     } else {
       form.reset({
@@ -124,26 +125,22 @@ export const VisaFormDialog = ({
 
   const onSubmit = (data: VisaFormData) => {
     const visaData = {
-      customerId: data.customerId,
-      visaNumber: data.visaNumber,
-      issueDate: data.issueDate.toISOString(),
-      expiryDate: data.expiryDate.toISOString(),
-      departureDate: data.departureDate.toISOString(),
+      customer_id: data.customerId,
+      visa_number: data.visaNumber,
+      issue_date: data.issueDate.toISOString().split('T')[0],
+      expiry_date: data.expiryDate.toISOString().split('T')[0],
+      departure_date: data.departureDate.toISOString().split('T')[0],
       status: data.status,
-      travelDirection: data.travelDirection,
-      fromLocation: data.fromLocation,
-      toLocation: data.toLocation,
-      bookingDate: visa?.bookingDate || new Date().toISOString(),
+      travel_direction: data.travelDirection,
+      from_location: data.fromLocation,
+      to_location: data.toLocation,
+      booking_date: visa?.booking_date || new Date().toISOString().split('T')[0],
     };
 
     if (visa) {
-      updateVisa(visa.id, visaData);
+      updateVisa({ id: visa.id, ...visaData });
     } else {
-      const newVisa: Visa = {
-        id: crypto.randomUUID(),
-        ...visaData,
-      };
-      addVisa(newVisa);
+      addVisa(visaData);
     }
     onOpenChange(false);
     form.reset();
@@ -178,7 +175,7 @@ export const VisaFormDialog = ({
                     <SelectContent>
                       {customers.map((customer) => (
                         <SelectItem key={customer.id} value={customer.id}>
-                          {customer.fullName}
+                          {customer.full_name}
                         </SelectItem>
                       ))}
                     </SelectContent>

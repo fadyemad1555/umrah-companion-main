@@ -1,12 +1,12 @@
 import { useState } from 'react';
-import { Plus, Search, Edit, Trash2, Eye, Printer } from 'lucide-react';
-import { useStore } from '@/store/useStore';
+import { Plus, Search, Edit, Trash2, Printer } from 'lucide-react';
+import { useVisas, Visa } from '@/hooks/useVisas';
+import { useCustomers } from '@/hooks/useCustomers';
 import { Layout } from '@/components/layout/Layout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { VisaFormDialog } from '@/components/visas/VisaFormDialog';
 import { VisaPreviewDialog } from '@/components/visas/VisaPreviewDialog';
-import { Visa } from '@/types';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -19,7 +19,8 @@ import {
 } from '@/components/ui/alert-dialog';
 
 const Visas = () => {
-  const { visas, customers, deleteVisa } = useStore();
+  const { visas, deleteVisa, isLoading } = useVisas();
+  const { customers } = useCustomers();
   const [searchQuery, setSearchQuery] = useState('');
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingVisa, setEditingVisa] = useState<Visa | null>(null);
@@ -28,10 +29,10 @@ const Visas = () => {
   const [visaToDelete, setVisaToDelete] = useState<string | null>(null);
 
   const filteredVisas = visas.filter((visa) => {
-    const customer = customers.find((c) => c.id === visa.customerId);
+    const customer = customers.find((c) => c.id === visa.customer_id);
     return (
-      customer?.fullName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      visa.visaNumber.toLowerCase().includes(searchQuery.toLowerCase())
+      customer?.full_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      visa.visa_number.toLowerCase().includes(searchQuery.toLowerCase())
     );
   });
 
@@ -63,26 +64,72 @@ const Visas = () => {
   };
 
   const getStatusBadge = (status: Visa['status']) => {
-    const styles = {
+    const styles: Record<string, string> = {
       pending: 'bg-warning text-warning-foreground',
       issued: 'bg-success text-success-foreground',
       expired: 'bg-destructive text-destructive-foreground',
     };
-    const labels = {
+    const labels: Record<string, string> = {
       pending: 'قيد المعالجة',
       issued: 'صادرة',
       expired: 'منتهية',
     };
     return (
-      <span className={`px-3 py-1 rounded-full text-xs font-medium ${styles[status]}`}>
-        {labels[status]}
+      <span className={`px-3 py-1 rounded-full text-xs font-medium ${styles[status] || ''}`}>
+        {labels[status] || status}
       </span>
     );
   };
 
-  const formatDate = (dateString: string) => {
+  const formatDate = (dateString: string | null) => {
+    if (!dateString) return '-';
     return new Date(dateString).toLocaleDateString('ar-EG');
   };
+
+  // Convert Visa to legacy format for VisaPreviewDialog
+  const convertToLegacyVisa = (visa: Visa | null) => {
+    if (!visa) return undefined;
+    return {
+      id: visa.id,
+      customerId: visa.customer_id,
+      visaNumber: visa.visa_number,
+      issueDate: visa.issue_date || '',
+      expiryDate: visa.expiry_date || '',
+      status: visa.status as 'pending' | 'issued' | 'expired',
+      travelDirection: visa.travel_direction,
+      fromLocation: visa.from_location,
+      toLocation: visa.to_location,
+      departureDate: visa.departure_date || '',
+      bookingDate: visa.booking_date || '',
+    };
+  };
+
+  const convertToLegacyCustomer = (customerId: string | undefined) => {
+    if (!customerId) return undefined;
+    const customer = customers.find((c) => c.id === customerId);
+    if (!customer) return undefined;
+    return {
+      id: customer.id,
+      fullName: customer.full_name,
+      phoneNumber: customer.phone_number,
+      nationalId: customer.national_id,
+      address: customer.address,
+      umrahProgram: customer.umrah_program,
+      visaStatus: customer.visa_status as 'pending' | 'processing' | 'approved' | 'rejected',
+      notes: customer.notes,
+      createdAt: customer.created_at,
+    };
+  };
+
+  if (isLoading) {
+    return (
+      <Layout>
+        <div className="flex items-center justify-center h-64">
+          <div className="w-12 h-12 border-4 border-primary/30 border-t-primary rounded-full animate-spin" />
+        </div>
+      </Layout>
+    );
+  }
 
   return (
     <Layout>
@@ -134,20 +181,20 @@ const Visas = () => {
                   </tr>
                 ) : (
                   filteredVisas.map((visa) => {
-                    const customer = customers.find((c) => c.id === visa.customerId);
+                    const customer = customers.find((c) => c.id === visa.customer_id);
                     return (
                       <tr key={visa.id} className="hover:bg-muted/30 transition-colors">
                         <td className="px-6 py-4">
-                          <span className="font-medium">{customer?.fullName || 'عميل غير معروف'}</span>
+                          <span className="font-medium">{customer?.full_name || 'عميل غير معروف'}</span>
                         </td>
-                        <td className="px-6 py-4 font-mono" dir="ltr">{visa.visaNumber}</td>
+                        <td className="px-6 py-4 font-mono" dir="ltr">{visa.visa_number}</td>
                         <td className="px-6 py-4 text-sm">
                           <span className="text-primary">
-                            {visa.fromLocation} → {visa.toLocation}
+                            {visa.from_location} → {visa.to_location}
                           </span>
                         </td>
-                        <td className="px-6 py-4">{formatDate(visa.bookingDate)}</td>
-                        <td className="px-6 py-4">{formatDate(visa.departureDate)}</td>
+                        <td className="px-6 py-4">{formatDate(visa.booking_date)}</td>
+                        <td className="px-6 py-4">{formatDate(visa.departure_date)}</td>
                         <td className="px-6 py-4">{getStatusBadge(visa.status)}</td>
                         <td className="px-6 py-4">
                           <div className="flex gap-2">
@@ -193,8 +240,8 @@ const Visas = () => {
       <VisaPreviewDialog
         open={!!previewVisa}
         onOpenChange={() => setPreviewVisa(null)}
-        visa={previewVisa}
-        customer={customers.find((c) => c.id === previewVisa?.customerId)}
+        visa={convertToLegacyVisa(previewVisa)}
+        customer={convertToLegacyCustomer(previewVisa?.customer_id)}
       />
 
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>

@@ -2,12 +2,12 @@ import { useState } from 'react';
 import { Plus, Search, Edit, Trash2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
-import { useStore } from '@/store/useStore';
+import { useBookings, Booking } from '@/hooks/useBookings';
+import { useCustomers } from '@/hooks/useCustomers';
 import { Layout } from '@/components/layout/Layout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { BookingFormDialog } from '@/components/bookings/BookingFormDialog';
-import { Booking } from '@/types';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -20,7 +20,8 @@ import {
 } from '@/components/ui/alert-dialog';
 
 const Bookings = () => {
-  const { bookings, customers, deleteBooking, togglePaymentStatus } = useStore();
+  const { bookings, deleteBooking, togglePaymentStatus, isLoading } = useBookings();
+  const { customers } = useCustomers();
   const [searchQuery, setSearchQuery] = useState('');
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingBooking, setEditingBooking] = useState<Booking | null>(null);
@@ -28,10 +29,10 @@ const Bookings = () => {
   const [bookingToDelete, setBookingToDelete] = useState<string | null>(null);
 
   const filteredBookings = bookings.filter((booking) => {
-    const customer = customers.find((c) => c.id === booking.customerId);
+    const customer = customers.find((c) => c.id === booking.customer_id);
     return (
-      customer?.fullName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      booking.programName.toLowerCase().includes(searchQuery.toLowerCase())
+      customer?.full_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      booking.program_name.toLowerCase().includes(searchQuery.toLowerCase())
     );
   });
 
@@ -57,6 +58,16 @@ const Bookings = () => {
     setIsDialogOpen(false);
     setEditingBooking(null);
   };
+
+  if (isLoading) {
+    return (
+      <Layout>
+        <div className="flex items-center justify-center h-64">
+          <div className="w-12 h-12 border-4 border-primary/30 border-t-primary rounded-full animate-spin" />
+        </div>
+      </Layout>
+    );
+  }
 
   return (
     <Layout>
@@ -110,46 +121,46 @@ const Bookings = () => {
                   </tr>
                 ) : (
                   filteredBookings.map((booking) => {
-                    const customer = customers.find((c) => c.id === booking.customerId);
+                    const customer = customers.find((c) => c.id === booking.customer_id);
                     return (
                       <tr key={booking.id} className="hover:bg-muted/30 transition-colors">
                         <td className="px-6 py-4">
-                          <span className="font-medium">{customer?.fullName || 'عميل غير معروف'}</span>
+                          <span className="font-medium">{customer?.full_name || 'عميل غير معروف'}</span>
                         </td>
-                        <td className="px-6 py-4">{booking.programName}</td>
+                        <td className="px-6 py-4">{booking.program_name}</td>
                         <td className="px-6 py-4 text-sm">
-                          {booking.fromLocation && booking.toLocation ? (
-                            <span>{booking.fromLocation} → {booking.toLocation}</span>
+                          {booking.from_location && booking.to_location ? (
+                            <span>{booking.from_location} → {booking.to_location}</span>
                           ) : (
                             <span className="text-muted-foreground">-</span>
                           )}
                         </td>
                         <td className="px-6 py-4 text-sm">
-                          {booking.departureDate ? (
-                            format(new Date(booking.departureDate), "dd/MM/yyyy", { locale: ar })
+                          {booking.departure_date ? (
+                            format(new Date(booking.departure_date), "dd/MM/yyyy", { locale: ar })
                           ) : (
                             <span className="text-muted-foreground">-</span>
                           )}
                         </td>
                         <td className="px-6 py-4 font-semibold">
-                          {booking.totalAmount.toLocaleString('ar-EG')} ج.م
+                          {Number(booking.total_amount).toLocaleString('ar-EG')} ج.م
                         </td>
                         <td className="px-6 py-4">
-                          {booking.visaDeposit.toLocaleString('ar-EG')} ج.م
+                          {Number(booking.visa_deposit).toLocaleString('ar-EG')} ج.م
                         </td>
                         <td className="px-6 py-4">
-                          {booking.remainingAmount.toLocaleString('ar-EG')} ج.م
+                          {Number(booking.remaining_amount).toLocaleString('ar-EG')} ج.م
                         </td>
                         <td className="px-6 py-4">
                           <button
                             onClick={() => togglePaymentStatus(booking.id)}
                             className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
-                              booking.isPaid
+                              booking.is_paid
                                 ? 'bg-success text-success-foreground hover:bg-success/90'
                                 : 'bg-accent text-accent-foreground hover:bg-accent/90'
                             }`}
                           >
-                            {booking.isPaid ? 'تم الدفع بالكامل' : 'تم دفع الباقي'}
+                            {booking.is_paid ? 'تم الدفع بالكامل' : 'تم دفع الباقي'}
                           </button>
                         </td>
                         <td className="px-6 py-4">
@@ -171,8 +182,7 @@ const Bookings = () => {
                       </tr>
                     );
                   })
-                )
-              }
+                )}
               </tbody>
             </table>
           </div>

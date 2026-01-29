@@ -26,8 +26,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
-import { useStore } from '@/store/useStore';
-import { Debt } from '@/types';
+import { useDebts, Debt } from '@/hooks/useDebts';
 
 const debtSchema = z.object({
   personName: z.string().min(2, 'اسم الشخص مطلوب'),
@@ -49,7 +48,7 @@ export const DebtFormDialog = ({
   onOpenChange,
   debt,
 }: DebtFormDialogProps) => {
-  const { addDebt, updateDebt } = useStore();
+  const { addDebt, updateDebt } = useDebts();
 
   const form = useForm<DebtFormData>({
     resolver: zodResolver(debtSchema),
@@ -64,8 +63,8 @@ export const DebtFormDialog = ({
   useEffect(() => {
     if (debt) {
       form.reset({
-        personName: debt.personName,
-        amount: debt.amount,
+        personName: debt.person_name,
+        amount: Number(debt.amount),
         type: debt.type,
         description: debt.description,
       });
@@ -81,18 +80,22 @@ export const DebtFormDialog = ({
 
   const onSubmit = (data: DebtFormData) => {
     if (debt) {
-      updateDebt(debt.id, data);
+      updateDebt({
+        id: debt.id,
+        person_name: data.personName,
+        amount: data.amount,
+        type: data.type,
+        description: data.description || '',
+      });
     } else {
-      const newDebt: Debt = {
-        id: crypto.randomUUID(),
-        personName: data.personName,
+      addDebt({
+        person_name: data.personName,
         amount: data.amount,
         type: data.type,
         description: data.description || '',
         date: new Date().toISOString().split('T')[0],
-        isPaid: false,
-      };
-      addDebt(newDebt);
+        is_paid: false,
+      });
     }
     onOpenChange(false);
     form.reset();

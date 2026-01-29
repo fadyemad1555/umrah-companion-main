@@ -9,7 +9,10 @@ import Bookings from "./pages/Bookings";
 import Reports from "./pages/Reports";
 import Expenses from "./pages/Expenses";
 import Visas from "./pages/Visas";
+import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
+import { InstallPrompt } from "./components/pwa/InstallPrompt";
+import { AuthGuard } from "./components/auth/AuthGuard";
 
 const queryClient = new QueryClient();
 
@@ -18,14 +21,16 @@ const App = () => (
     <TooltipProvider>
       <Toaster />
       <Sonner />
+      <InstallPrompt />
       <BrowserRouter>
         <Routes>
-          <Route path="/" element={<Dashboard />} />
-          <Route path="/customers" element={<Customers />} />
-          <Route path="/bookings" element={<Bookings />} />
-          <Route path="/visas" element={<Visas />} />
-          <Route path="/reports" element={<Reports />} />
-          <Route path="/expenses" element={<Expenses />} />
+          <Route path="/auth" element={<Auth />} />
+          <Route path="/" element={<AuthGuard><Dashboard /></AuthGuard>} />
+          <Route path="/customers" element={<AuthGuard><Customers /></AuthGuard>} />
+          <Route path="/bookings" element={<AuthGuard><Bookings /></AuthGuard>} />
+          <Route path="/visas" element={<AuthGuard><Visas /></AuthGuard>} />
+          <Route path="/reports" element={<AuthGuard><Reports /></AuthGuard>} />
+          <Route path="/expenses" element={<AuthGuard><Expenses /></AuthGuard>} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>

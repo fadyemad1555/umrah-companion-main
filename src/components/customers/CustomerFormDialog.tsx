@@ -26,8 +26,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
-import { useStore } from '@/store/useStore';
-import { Customer } from '@/types';
+import { useCustomers, Customer } from '@/hooks/useCustomers';
 
 const customerSchema = z.object({
   fullName: z.string().min(2, 'الاسم يجب أن يكون حرفين على الأقل'),
@@ -52,7 +51,7 @@ export const CustomerFormDialog = ({
   onOpenChange,
   customer,
 }: CustomerFormDialogProps) => {
-  const { addCustomer, updateCustomer } = useStore();
+  const { addCustomer, updateCustomer } = useCustomers();
 
   const form = useForm<CustomerFormData>({
     resolver: zodResolver(customerSchema),
@@ -70,12 +69,12 @@ export const CustomerFormDialog = ({
   useEffect(() => {
     if (customer) {
       form.reset({
-        fullName: customer.fullName,
-        phoneNumber: customer.phoneNumber,
-        nationalId: customer.nationalId,
+        fullName: customer.full_name,
+        phoneNumber: customer.phone_number,
+        nationalId: customer.national_id,
         address: customer.address || '',
-        umrahProgram: customer.umrahProgram || '',
-        visaStatus: customer.visaStatus,
+        umrahProgram: customer.umrah_program || '',
+        visaStatus: customer.visa_status as 'pending' | 'processing' | 'approved' | 'rejected',
         notes: customer.notes || '',
       });
     } else {
@@ -93,20 +92,26 @@ export const CustomerFormDialog = ({
 
   const onSubmit = (data: CustomerFormData) => {
     if (customer) {
-      updateCustomer(customer.id, data);
-    } else {
-      const newCustomer: Customer = {
-        id: crypto.randomUUID(),
-        fullName: data.fullName,
-        phoneNumber: data.phoneNumber,
-        nationalId: data.nationalId,
+      updateCustomer({
+        id: customer.id,
+        full_name: data.fullName,
+        phone_number: data.phoneNumber,
+        national_id: data.nationalId,
         address: data.address || '',
-        umrahProgram: data.umrahProgram || '',
-        visaStatus: data.visaStatus,
+        umrah_program: data.umrahProgram || '',
+        visa_status: data.visaStatus,
         notes: data.notes || '',
-        createdAt: new Date().toISOString(),
-      };
-      addCustomer(newCustomer);
+      });
+    } else {
+      addCustomer({
+        full_name: data.fullName,
+        phone_number: data.phoneNumber,
+        national_id: data.nationalId,
+        address: data.address || '',
+        umrah_program: data.umrahProgram || '',
+        visa_status: data.visaStatus,
+        notes: data.notes || '',
+      });
     }
     onOpenChange(false);
     form.reset();

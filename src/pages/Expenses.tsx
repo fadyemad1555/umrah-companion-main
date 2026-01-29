@@ -1,11 +1,10 @@
 import { useState } from 'react';
 import { Plus, Search, Edit, Trash2 } from 'lucide-react';
-import { useStore } from '@/store/useStore';
+import { useExpenses, Expense } from '@/hooks/useExpenses';
 import { Layout } from '@/components/layout/Layout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ExpenseFormDialog } from '@/components/expenses/ExpenseFormDialog';
-import { Expense } from '@/types';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -27,7 +26,7 @@ const expenseCategories: Record<string, string> = {
 };
 
 const Expenses = () => {
-  const { expenses, deleteExpense } = useStore();
+  const { expenses, deleteExpense, isLoading } = useExpenses();
   const [searchQuery, setSearchQuery] = useState('');
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
@@ -40,7 +39,7 @@ const Expenses = () => {
       expenseCategories[expense.category]?.includes(searchQuery)
   );
 
-  const totalExpenses = filteredExpenses.reduce((acc, e) => acc + e.amount, 0);
+  const totalExpenses = filteredExpenses.reduce((acc, e) => acc + Number(e.amount), 0);
 
   const handleEdit = (expense: Expense) => {
     setEditingExpense(expense);
@@ -64,6 +63,16 @@ const Expenses = () => {
     setIsDialogOpen(false);
     setEditingExpense(null);
   };
+
+  if (isLoading) {
+    return (
+      <Layout>
+        <div className="flex items-center justify-center h-64">
+          <div className="w-12 h-12 border-4 border-primary/30 border-t-primary rounded-full animate-spin" />
+        </div>
+      </Layout>
+    );
+  }
 
   return (
     <Layout>
@@ -130,7 +139,7 @@ const Expenses = () => {
                       </td>
                       <td className="px-6 py-4">{expense.description}</td>
                       <td className="px-6 py-4 font-semibold text-accent">
-                        {expense.amount.toLocaleString('ar-EG')} ج.م
+                        {Number(expense.amount).toLocaleString('ar-EG')} ج.م
                       </td>
                       <td className="px-6 py-4">
                         <div className="flex gap-2">

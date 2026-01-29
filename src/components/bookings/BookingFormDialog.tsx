@@ -34,8 +34,8 @@ import {
 import { Calendar } from '@/components/ui/calendar';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { useStore } from '@/store/useStore';
-import { Booking } from '@/types';
+import { useBookings, Booking } from '@/hooks/useBookings';
+import { useCustomers } from '@/hooks/useCustomers';
 import { cn } from '@/lib/utils';
 
 
@@ -63,7 +63,8 @@ export const BookingFormDialog = ({
   onOpenChange,
   booking,
 }: BookingFormDialogProps) => {
-  const { customers, addBooking, updateBooking } = useStore();
+  const { customers } = useCustomers();
+  const { addBooking, updateBooking } = useBookings();
 
   const form = useForm<BookingFormData>({
     resolver: zodResolver(bookingSchema),
@@ -83,14 +84,14 @@ export const BookingFormDialog = ({
   useEffect(() => {
     if (booking) {
       form.reset({
-        customerId: booking.customerId,
-        programName: booking.programName,
-        totalAmount: booking.totalAmount,
-        visaDeposit: booking.visaDeposit,
-        travelDirection: booking.travelDirection,
-        fromLocation: booking.fromLocation,
-        toLocation: booking.toLocation,
-        departureDate: new Date(booking.departureDate),
+        customerId: booking.customer_id,
+        programName: booking.program_name,
+        totalAmount: Number(booking.total_amount),
+        visaDeposit: Number(booking.visa_deposit),
+        travelDirection: booking.travel_direction,
+        fromLocation: booking.from_location,
+        toLocation: booking.to_location,
+        departureDate: booking.departure_date ? new Date(booking.departure_date) : undefined,
       });
     } else {
       form.reset({
@@ -117,27 +118,31 @@ export const BookingFormDialog = ({
     const remainingAmount = data.totalAmount - data.visaDeposit;
     
     if (booking) {
-      updateBooking(booking.id, {
-        ...data,
-        remainingAmount,
-        departureDate: data.departureDate.toISOString(),
+      updateBooking({
+        id: booking.id,
+        customer_id: data.customerId,
+        program_name: data.programName,
+        total_amount: data.totalAmount,
+        visa_deposit: data.visaDeposit,
+        remaining_amount: remainingAmount,
+        travel_direction: data.travelDirection,
+        from_location: data.fromLocation,
+        to_location: data.toLocation,
+        departure_date: data.departureDate.toISOString().split('T')[0],
       });
     } else {
-      const newBooking: Booking = {
-        id: crypto.randomUUID(),
-        customerId: data.customerId,
-        programName: data.programName,
-        totalAmount: data.totalAmount,
-        visaDeposit: data.visaDeposit,
-        remainingAmount,
-        isPaid: false,
-        createdAt: new Date().toISOString(),
-        travelDirection: data.travelDirection,
-        fromLocation: data.fromLocation,
-        toLocation: data.toLocation,
-        departureDate: data.departureDate.toISOString(),
-      };
-      addBooking(newBooking);
+      addBooking({
+        customer_id: data.customerId,
+        program_name: data.programName,
+        total_amount: data.totalAmount,
+        visa_deposit: data.visaDeposit,
+        remaining_amount: remainingAmount,
+        is_paid: false,
+        travel_direction: data.travelDirection,
+        from_location: data.fromLocation,
+        to_location: data.toLocation,
+        departure_date: data.departureDate.toISOString().split('T')[0],
+      });
     }
     onOpenChange(false);
     form.reset();
@@ -170,7 +175,7 @@ export const BookingFormDialog = ({
                     <SelectContent>
                       {customers.map((customer) => (
                         <SelectItem key={customer.id} value={customer.id}>
-                          {customer.fullName}
+                          {customer.full_name}
                         </SelectItem>
                       ))}
                     </SelectContent>

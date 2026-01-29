@@ -26,8 +26,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
-import { useStore } from '@/store/useStore';
-import { Expense } from '@/types';
+import { useExpenses, Expense } from '@/hooks/useExpenses';
 
 const expenseSchema = z.object({
   category: z.string().min(1, 'يجب اختيار الفئة'),
@@ -49,7 +48,7 @@ export const ExpenseFormDialog = ({
   onOpenChange,
   expense,
 }: ExpenseFormDialogProps) => {
-  const { addExpense, updateExpense } = useStore();
+  const { addExpense, updateExpense } = useExpenses();
 
   const form = useForm<ExpenseFormData>({
     resolver: zodResolver(expenseSchema),
@@ -65,7 +64,7 @@ export const ExpenseFormDialog = ({
     if (expense) {
       form.reset({
         category: expense.category,
-        amount: expense.amount,
+        amount: Number(expense.amount),
         description: expense.description,
         date: expense.date,
       });
@@ -81,16 +80,20 @@ export const ExpenseFormDialog = ({
 
   const onSubmit = (data: ExpenseFormData) => {
     if (expense) {
-      updateExpense(expense.id, data);
-    } else {
-      const newExpense: Expense = {
-        id: crypto.randomUUID(),
+      updateExpense({
+        id: expense.id,
         category: data.category,
         amount: data.amount,
         description: data.description,
         date: data.date,
-      };
-      addExpense(newExpense);
+      });
+    } else {
+      addExpense({
+        category: data.category,
+        amount: data.amount,
+        description: data.description,
+        date: data.date,
+      });
     }
     onOpenChange(false);
     form.reset();
